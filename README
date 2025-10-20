@@ -1,0 +1,77 @@
+Recipe Sharing Web Application
+
+A Spring Boot-based web application that allows users to share, browse, and manage recipes. It supports user authentication with JWT, role-based access control, and favorites management. Users can create, read, update, and delete their own recipes, while admins have full access to all recipes.
+
+Features
+
+User Authentication & Authorization
+
+JWT-based login and registration
+
+Role-based access: USER and ADMIN
+
+Recipe Management
+
+Users can CRUD their own recipes
+
+Admins can CRUD any recipe
+
+Categories for recipes
+
+Pagination and search by title or category
+
+Favorites
+
+Users can favorite/unfavorite recipes
+
+View list of their favorite recipes
+
+DTOs
+
+Clean API responses using DTOs to avoid exposing entity internals
+
+Validation
+
+Input validation for recipe fields (title, description, category)
+
+Tech Stack
+
+Backend: Java, Spring Boot, Spring Security, Spring Data JPA, H2 Database (in-memory)
+
+Authentication: JWT (JSON Web Tokens)
+
+ORM: (JPA)Hibernate
+
+Validation: Jakarta Bean Validation
+
+Build Tool: Maven
+
+API Endpoints Authentication
+
+POST /api/auth/register – Register a new user
+
+POST /api/auth/login – Login and receive JWT
+
+Recipes
+
+GET /api/recipes – List all recipes (paginated)
+
+GET /api/recipes/{id} – Get recipe by ID
+
+POST /api/recipes – Create new recipe (authenticated)
+
+PUT /api/recipes/{id} – Update recipe (owner or admin)
+
+DELETE /api/recipes/{id} – Delete recipe (owner or admin)
+
+GET /api/recipes/search?title=&category= – Search recipes
+
+Favorites
+
+POST /api/favorites/{recipeId} – Add recipe to favorites
+
+DELETE /api/favorites/{recipeId} – Remove recipe from favorites
+
+GET /api/favorites – List user’s favorite recipes
+
+Testing: Postman
