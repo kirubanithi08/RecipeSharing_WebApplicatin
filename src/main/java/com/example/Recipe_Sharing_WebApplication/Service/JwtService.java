@@ -20,6 +20,9 @@ public class JwtService {
     @Value("${app.jwtSecret}")
     private  String jwtSecret;
 
+    @Value("${app.jwtExpirationMs}")
+    private int jwtExpirationMs;
+
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -33,12 +36,12 @@ public class JwtService {
 
 
     public String generateToken(UserDetails userDetails) {
-        return generateToken(userDetails, 1000 * 60 * 15);
+        return generateToken(userDetails, jwtExpirationMs);
     }
 
 
     public String generateRefreshToken(UserDetails userDetails) {
-        return generateToken(userDetails, 1000 * 60 * 60 * 24);
+        return generateToken(userDetails, jwtExpirationMs);
     }
 
     private String generateToken(UserDetails userDetails, long expirationMs) {
