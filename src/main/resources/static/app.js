@@ -1,6 +1,6 @@
 const API_URL = 'http://localhost:8080/api';
 let currentPage = 0;
-const pageSize = 8;
+const pageSize = 9;
 let lastPage = 0;
 
 const LS = {
@@ -176,6 +176,9 @@ async function loadRecipes() {
     if (!res.ok) { recipeList.innerHTML = '<div class="card">Load failed</div>'; return; }
     const page = await res.json();
     const content = page.content || page;
+
+
+
     recipeList.innerHTML = content.map(r => `
       <div class="recipe-card" data-id="${r.id}">
         <h4>${escapeHtml(r.title)}</h4>
@@ -183,6 +186,11 @@ async function loadRecipes() {
         <div class="recipe-desc">${escapeHtml((r.description || '').slice(0, 100))}</div>
       </div>
     `).join('') || '<div class="card">No recipes</div>';
+
+
+
+
+    
     lastPage = (page.totalPages || 1) - 1;
     pageInfo.textContent = `Page ${page.number + 1} of ${page.totalPages}`;
     document.querySelectorAll('.recipe-card').forEach(el => {
@@ -199,22 +207,50 @@ async function loadRecipeDetail(id) {
     const res = await apiFetch(`${API_URL}/recipes/${id}`);
     if (!res.ok) { modalBody.innerHTML = '<p>Failed to load</p>'; return; }
     const r = await res.json();
+
+    // Determine current username from token
+    const token = getToken();
+    let username = null;
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        username = payload.sub || payload.username;
+      } catch {}
+    }
+
+    let buttons = '';
+    if (token) {
+      buttons += `<button class="btn" id="fav-add" data-id="${r.id}">❤ Favorite</button>`;
+      if (username && username === r.authorUsername) {
+        buttons += `
+          <button class="btn" id="btn-edit">✎ Edit</button>
+          <button class="btn danger" id="btn-delete">🗑 Delete</button>
+        `;
+      }
+    }
+
     modalBody.innerHTML = `
       <h2>${escapeHtml(r.title)}</h2>
       <p><strong>Category:</strong> ${escapeHtml(prettyCategory(r.category))}</p>
       <p><strong>By:</strong> ${escapeHtml(r.authorUsername)}</p>
       <p><strong>Description:</strong><br>${escapeHtml(r.description || '')}</p>
       <p><strong>Instructions:</strong><br>${escapeHtml(r.instructions || '')}</p>
-      <div style="margin-top:12px;text-align:right;">
-        ${getToken() ? `<button class="btn" id="fav-add" data-id="${r.id}">❤ Favorite</button>` : ''}
-      </div>
+      <div style="margin-top:12px;text-align:right;">${buttons}</div>
     `;
+
     const favBtn = document.getElementById('fav-add');
     if (favBtn) {
       const favs = await getFavorites();
       if (favs.some(f => f.id === r.id)) favBtn.classList.add('fav-active');
       favBtn.onclick = () => toggleFavorite(r.id, favBtn);
     }
+
+    const editBtn = document.getElementById('btn-edit');
+    if (editBtn) editBtn.onclick = () => showRecipeForm(r);
+
+    const deleteBtn = document.getElementById('btn-delete');
+    if (deleteBtn) deleteBtn.onclick = () => deleteRecipe(r.id);
+
   } catch { modalBody.innerHTML = '<p>Error loading recipe</p>'; }
 }
 
@@ -247,13 +283,14 @@ async function loadFavorites() {
 }
 
 async function toggleFavorite(id, btn) {
+  const isActive = btn.classList.contains('fav-active');
+  const method = isActive ? 'DELETE' : 'POST';
   try {
-    const res = await apiFetch(`${API_URL}/favorites/${id}`, { method: 'POST' });
-    if (res.ok) {
-      btn.classList.toggle('fav-active');
-      showToast(btn.classList.contains('fav-active') ? 'Added to favorites' : 'Removed from favorites');
-      loadFavorites();
-    } else showToast('Failed', 'error');
+    const res = await apiFetch(`${API_URL}/favorites/${id}`, { method });
+    if (!res.ok) throw new Error('Failed');
+    btn.classList.toggle('fav-active');
+    showToast(isActive ? 'Removed from favorites' : 'Added to favorites');
+    loadFavorites();
   } catch { showToast('Failed', 'error'); }
 }
 
@@ -263,6 +300,18 @@ async function removeFavorite(id) {
     if (!res.ok) throw new Error('Failed');
     showToast('Removed'); loadFavorites();
   } catch { showToast('Remove failed', 'error'); }
+}
+
+// ======== DELETE RECIPE ========
+async function deleteRecipe(id) {
+  if (!confirm('Delete this recipe?')) return;
+  try {
+    const res = await apiFetch(`${API_URL}/recipes/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Delete failed');
+    closeModal();
+    showToast('Deleted');
+    loadRecipes();
+  } catch { showToast('Delete failed', 'error'); }
 }
 
 // ======== CATEGORY HANDLING ========

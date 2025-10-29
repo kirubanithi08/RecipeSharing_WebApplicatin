@@ -40,6 +40,7 @@ public class RecipeService {
         return recipeRepository.findById(id).map(existing -> {
             if (updates.getTitle() != null) existing.setTitle(updates.getTitle());
             if (updates.getDescription() != null) existing.setDescription(updates.getDescription());
+            if (updates.getInstructions() != null) existing.setInstructions(updates.getInstructions());
             if (updates.getCategory() != null) existing.setCategory(updates.getCategory());
             return mapToDTO(recipeRepository.save(existing));
         });
@@ -85,8 +86,8 @@ public class RecipeService {
                 recipe.getId(),
                 recipe.getTitle(),
                 recipe.getDescription(),
-                recipe.getInstructions(),
                 recipe.getCategory().name(),
+                recipe.getInstructions(),
                 recipe.getAuthor().getUsername(),
                 recipe.getCreatedAt()
         );

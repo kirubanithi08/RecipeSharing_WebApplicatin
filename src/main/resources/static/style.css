@@ -15,6 +15,7 @@ body {
   color:#0f172a;
 }
 
+/* Header */
 .app-header {
   display:flex;
   justify-content:space-between;
@@ -28,10 +29,19 @@ body {
   z-index:100;
 }
 
-.brand h1 { margin:0; font-size:20px; font-weight:700; }
+.brand h1 {
+  margin:0;
+  font-size:20px;
+  font-weight:700;
+}
 
-.auth-area { display:flex; align-items:center; gap:8px; }
+.auth-area {
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
 
+/* Layout */
 .container {
   display:flex;
   gap:20px;
@@ -43,6 +53,7 @@ body {
 .left { flex:1.8; }
 .right { flex:1; max-width:340px; }
 
+/* Cards */
 .card {
   background:var(--card);
   border-radius:var(--radius);
@@ -51,8 +62,14 @@ body {
   border:1px solid rgba(0,0,0,0.03);
 }
 
-.search-row { display:flex; gap:10px; align-items:center; }
+/* Search row */
+.search-row {
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
 
+/* Form elements */
 input, select, textarea {
   padding:10px 12px;
   border:1px solid rgba(0,0,0,0.08);
@@ -60,7 +77,11 @@ input, select, textarea {
   font-size:14px;
   flex:1;
 }
-textarea { resize:vertical; min-height:80px; }
+
+textarea {
+  resize:vertical;
+  min-height:80px;
+}
 
 input:focus, select:focus, textarea:focus {
   border-color:var(--accent);
@@ -68,6 +89,7 @@ input:focus, select:focus, textarea:focus {
   box-shadow:0 0 0 3px rgba(43,140,255,0.1);
 }
 
+/* Buttons */
 .btn {
   border:none;
   padding:8px 14px;
@@ -79,6 +101,7 @@ input:focus, select:focus, textarea:focus {
 .btn.ghost { background:transparent; border:1px solid rgba(0,0,0,0.1); }
 .btn.small { padding:6px 10px; font-size:13px; }
 
+/* Grid for recipe cards */
 .grid {
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
@@ -86,6 +109,7 @@ input:focus, select:focus, textarea:focus {
   margin-top:16px;
 }
 
+/* Recipe cards */
 .recipe-card {
   border-radius:12px;
   padding:14px;
@@ -98,20 +122,49 @@ input:focus, select:focus, textarea:focus {
   transform:translateY(-4px);
   box-shadow:0 10px 20px rgba(0,0,0,0.08);
 }
-.recipe-card h4 { margin:0 0 6px; font-size:16px; }
-.recipe-meta { color:var(--muted); font-size:13px; margin-bottom:6px; }
-.recipe-desc { font-size:14px; color:#333; }
 
-.spinner { display:flex; justify-content:center; margin:20px 0; }
+.recipe-card h4 {
+  margin:0 0 6px;
+  font-size:16px;
+}
+
+.recipe-meta {
+  color:var(--muted);
+  font-size:13px;
+  margin-bottom:6px;
+}
+
+/* ✅ Fix: show only one line of description in cards */
+.recipe-desc {
+  font-size:14px;
+  color:#333;
+  display:-webkit-box;
+  -webkit-line-clamp:1; /* show only one line */
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:normal;
+}
+
+/* Spinner */
+.spinner {
+  display:flex;
+  justify-content:center;
+  margin:20px 0;
+}
 .spinner.hidden { display:none; }
+
 .loader {
-  width:34px; height:34px; border-radius:50%;
+  width:34px;
+  height:34px;
+  border-radius:50%;
   border:4px solid #eee;
   border-top:4px solid var(--accent);
   animation:spin 1s linear infinite;
 }
 @keyframes spin { to { transform:rotate(360deg); } }
 
+/* Modal */
 .modal {
   position:fixed;
   inset:0;
@@ -122,6 +175,7 @@ input:focus, select:focus, textarea:focus {
   z-index:200;
 }
 .modal.hidden { display:none; }
+
 .modal-content {
   width:620px;
   max-width:95%;
@@ -130,6 +184,7 @@ input:focus, select:focus, textarea:focus {
   border-radius:12px;
   padding:20px;
 }
+
 .close {
   position:absolute;
   right:10px;
@@ -140,6 +195,7 @@ input:focus, select:focus, textarea:focus {
   cursor:pointer;
 }
 
+/* Toasts */
 .toast-root {
   position:fixed;
   right:20px;
@@ -161,6 +217,7 @@ input:focus, select:focus, textarea:focus {
 .toast.error { background:#dc2626; }
 .toast.warning { background:#f59e0b; color:#111; }
 
+/* Favorites */
 .favorites h3 { margin-top:0; }
 .fav-list { list-style:none; padding:0; margin:0; }
 .fav-list li {
@@ -178,26 +235,51 @@ input:focus, select:focus, textarea:focus {
   font-size:16px;
 }
 
+/* Form rows */
 .form-row {
   display:flex;
   flex-direction:column;
   gap:6px;
   margin-bottom:10px;
 }
-.form-row label { font-size:14px; color:var(--muted); }
+.form-row label {
+  font-size:14px;
+  color:var(--muted);
+}
 
-
-/* Favorite button red state */
+/* Favorite button active state */
 .btn.fav-active {
-  background: #ff4d4d !important;
-  color: white !important;
+  background:#ff4d4d !important;
+  color:white !important;
 }
 
 /* Category select in form */
 .form-row select {
-  padding: 10px 12px;
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 8px;
-  font-size: 14px;
+  padding:10px 12px;
+  border:1px solid rgba(0,0,0,0.08);
+  border-radius:8px;
+  font-size:14px;
+}
+
+/* ===== Fix overflowing text in modal ===== */
+.modal-content {
+  max-height: 80vh;            /* keep modal within viewport height */
+  overflow-y: auto;             /* enable vertical scroll if content is long */
+  word-wrap: break-word;        /* prevent long words from overflowing */
+  overflow-wrap: break-word;    /* for extra safety */
+}
+
+/* Ensure long paragraphs look good */
+.modal-content p {
+  white-space: pre-wrap;        /* preserve line breaks but wrap text */
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+/* Optional: make description and instructions look visually distinct */
+.modal-content strong {
+  display: inline-block;
+  margin-top: 10px;
+  color: var(--accent);
 }
 
