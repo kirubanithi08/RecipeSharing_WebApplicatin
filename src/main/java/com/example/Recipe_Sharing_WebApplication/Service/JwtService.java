@@ -1,58 +1,61 @@
 package com.example.Recipe_Sharing_WebApplication.Service;
 
-
+import com.example.Recipe_Sharing_WebApplication.Entity.User; // ✅ Add this import
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 @Service
 public class JwtService {
 
     @Value("${app.jwtSecret}")
-    private  String jwtSecret;
+    private String jwtSecret;
 
-    @Value("${app.jwtExpirationMs}")
-    private int jwtExpirationMs;
+    @Value("${app.jwtAccessMs}")
+    private long jwtAccessMs;
 
+    @Value("${app.jwtRefreshMs}")
+    private long jwtRefreshMs;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
-
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-
     public String generateToken(UserDetails userDetails) {
-        return generateToken(userDetails, jwtExpirationMs);
+        Map<String, Object> claims = new HashMap<>();
+        return createToken(claims, userDetails.getUsername(), jwtAccessMs);
     }
-
 
     public String generateRefreshToken(UserDetails userDetails) {
-        return generateToken(userDetails, jwtExpirationMs);
+        Map<String, Object> claims = new HashMap<>();
+        return createToken(claims, userDetails.getUsername(), jwtRefreshMs);
     }
 
-    private String generateToken(UserDetails userDetails, long expirationMs) {
+    private String createToken(Map<String, Object> claims, String subject, long expirationMs) {
         return Jwts.builder()
-                .setSubject(userDetails.getUsername())
+                .setClaims(claims)
+                .setSubject(subject)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
+    // ✅ TOKEN VALIDATION HERE
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
@@ -79,5 +82,3 @@ public class JwtService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 }
-
-

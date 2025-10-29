@@ -8,13 +8,20 @@ import com.example.Recipe_Sharing_WebApplication.Entity.Role;
 import com.example.Recipe_Sharing_WebApplication.Entity.User;
 import com.example.Recipe_Sharing_WebApplication.Repository.UserRepository;
 import com.example.Recipe_Sharing_WebApplication.Service.JwtService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.PostConstruct;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,7 +36,6 @@ public class AuthController {
     private static final String ADMIN_USERNAME = "kiruba";
     private static final String ADMIN_PASSWORD = "123";
 
-
     @PostConstruct
     public void initAdmin() {
         if (userRepository.findByUsername(ADMIN_USERNAME).isEmpty()) {
@@ -42,56 +48,127 @@ public class AuthController {
         }
     }
 
+//    @PostMapping("/register")
+//    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
+//        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+//            return ResponseEntity.badRequest().body("Username already exists!");
+//        }
+//
+//        User user = User.builder()
+//                .username(request.getUsername())
+//                .password(passwordEncoder.encode(request.getPassword()))
+//                .role(Role.USER)
+//                .build();
+//
+//        userRepository.save(user);
+//        return ResponseEntity.ok("User registered successfully!");
+//
+//
+//    }
+
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<Map<String, String>> register(@RequestBody RegisterRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            return ResponseEntity.badRequest().body("Username already exists!");
+            return ResponseEntity.badRequest().body(Map.of("error", "Username already exists!"));
         }
-
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(Role.USER) // Always USER
+                .role(Role.USER)
                 .build();
-
         userRepository.save(user);
-        return ResponseEntity.ok("User registered successfully!");
+        return ResponseEntity.ok(Map.of("message", "User registered successfully!"));
     }
 
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
-
+    public ResponseEntity<AuthResponse> login(
+            @RequestBody AuthRequest request,
+            HttpServletResponse response) {
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
 
-
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
 
         String accessToken = jwtService.generateToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
-        return ResponseEntity.ok(new AuthResponse(accessToken, refreshToken));
+        // ✅ Set secure HttpOnly cookie for refresh token
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(false)  // ✅ Change to true when using HTTPS
+                .sameSite("Strict")
+                .path("/api/auth")
+                .maxAge(7 * 24 * 60 * 60)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+        return ResponseEntity.ok(new AuthResponse(accessToken, null)); // No more JSON refresh token
     }
 
-
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refresh(@RequestBody RefreshTokenRequest request) {
-        String username = jwtService.extractUsername(request.getRefreshToken());
+    public ResponseEntity<AuthResponse> refresh(
+            HttpServletRequest request,
+            HttpServletResponse response) {
+
+        // ✅ Read refresh token from cookie (not JSON body anymore)
+        String refreshToken = null;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("refreshToken".equals(cookie.getName())) {
+                    refreshToken = cookie.getValue();
+                }
+            }
+        }
+
+        if (refreshToken == null) {
+            return ResponseEntity.status(401).body(null);
+        }
+
+        String username = jwtService.extractUsername(refreshToken);
         User user = userRepository.findByUsername(username)
                 .orElseThrow();
 
-        if (!jwtService.isTokenValid(request.getRefreshToken(), user)) {
-            return ResponseEntity.status(401).build();
+        if (!jwtService.isTokenValid(refreshToken, user)) {
+            return ResponseEntity.status(401).body(null);
         }
 
+        // ✅ Generate new tokens
         String newAccessToken = jwtService.generateToken(user);
-        return ResponseEntity.ok(new AuthResponse(newAccessToken, request.getRefreshToken()));
+        String newRefreshToken = jwtService.generateRefreshToken(user);
+
+        // ✅ Update cookie
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", newRefreshToken)
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Strict")
+                .path("/api/auth")
+                .maxAge(7 * 24 * 60 * 60)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+        return ResponseEntity.ok(new AuthResponse(newAccessToken, null));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(HttpServletResponse response) {
+        // ✅ Delete the cookie
+        ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Strict")
+                .path("/api/auth")
+                .maxAge(0)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
+
+        return ResponseEntity.ok("Logged out");
     }
 }
-

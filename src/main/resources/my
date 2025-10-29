@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Recipe Sharing App</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <header>
+    <h1>Recipe Sharing</h1>
+    <div id="auth-area">
+      <span id="current-user"></span>
+      <button id="btn-login">Login</button>
+      <button id="btn-register">Register</button>
+      <button id="btn-logout" style="display:none">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="left">
+      <div class="controls">
+        <input id="search-title" placeholder="Search title" />
+        <select id="search-category">
+          <option value="">All categories</option>
+        </select>
+        <button id="btn-search">Search</button>
+      </div>
+
+      <div id="recipe-list"></div>
+
+      <div class="pagination">
+        <button id="prev-page">Prev</button>
+        <span id="page-info"></span>
+        <button id="next-page">Next</button>
+      </div>
+
+      <button id="btn-create" class="primary" style="display:none">Create Recipe</button>
+    </section>
+
+    <section class="right">
+      <div id="recipe-detail">
+        <p>Select a recipe to see details</p>
+      </div>
+
+      <hr/>
+
+      <div id="favorites-section">
+        <h3>Your Favorites</h3>
+        <div id="favorites-list">(login to view)</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal forms -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <button class="close" id="modal-close">×</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+
+
+:root{
+  --accent:#2b8cff;
+  --muted:#666;
+  --bg:#f7f9fc;
+  --card:#fff;
+  --danger:#e05d5d;
+}
+
+*{box-sizing:border-box}
+body{
+  font-family:Inter, system-ui, Arial;
+  margin:0;
+  background:var(--bg);
+  color:#222;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+}
+
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:16px 24px;
+  background:white;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06);
+}
+
+h1{margin:0;font-size:20px}
+
+#auth-area button{
+  margin-left:8px;
+  padding:6px 10px;
+  border-radius:6px;
+  border:1px solid #ddd;
+  background:transparent;
+  cursor:pointer;
+}
+
+main{
+  display:flex;
+  gap:20px;
+  padding:20px;
+  flex:1;
+}
+
+.left{
+  flex:1.6;
+}
+
+.right{
+  flex:1;
+  max-width:420px;
+}
+
+.controls{
+  display:flex;
+  gap:8px;
+  margin-bottom:12px;
+}
+
+input, select, textarea {
+  padding:8px;
+  border-radius:6px;
+  border:1px solid #ddd;
+  font-size:14px;
+}
+
+#recipe-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:12px;
+}
+
+.card{
+  background:var(--card);
+  padding:12px;
+  border-radius:8px;
+  border:1px solid #eee;
+  box-shadow:0 1px 2px rgba(0,0,0,0.02);
+}
+
+.card h4{margin:0 0 8px 0}
+.card p{margin:0 0 8px 0; color:var(--muted); font-size:13px}
+
+.row{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.small{font-size:12px;color:var(--muted)}
+
+.primary{
+  background:var(--accent);
+  color:white;
+  border:none;
+  padding:8px 12px;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+button.icon{
+  padding:6px 8px;
+  border-radius:6px;
+  border:1px solid #ddd;
+  background:white;
+  cursor:pointer;
+}
+
+.pagination{
+  margin-top:12px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+#recipe-detail{
+  background:var(--card);
+  padding:16px;
+  border-radius:8px;
+  border:1px solid #eee;
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,0.35);
+  z-index:50;
+}
+
+.modal.hidden{display:none;}
+
+.modal-content{
+  width:540px;
+  max-width:95%;
+  background:var(--card);
+  padding:16px;
+  border-radius:10px;
+  position:relative;
+}
+
+.close{
+  position:absolute;
+  right:8px;
+  top:8px;
+  border:none;
+  background:transparent;
+  font-size:20px;
+  cursor:pointer;
+}
+
+.form-row{margin-bottom:10px;}
+
+label{display:block;font-weight:600;margin-bottom:6px;font-size:13px}
+textarea{min-height:110px;resize:vertical}
+
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.danger{background:var(--danger);color:#fff;border:none;padding:8px 10px;border-radius:6px}
+.note{font-size:13px;color:var(--muted)}
+
+
+/**
+ * Simple frontend for Recipe Sharing App (vanilla JS)
+ *
+ * Update API_URL if your backend runs somewhere else.
+ */
+
+const API_URL = 'http://localhost:8080/api';
+let currentPage = 0;
+const pageSize = 8;
+let lastPage = 0;
+
+// --- helpers for auth token ---
+function setToken(token) { localStorage.setItem('jwt', token); }
+function getToken() { return localStorage.getItem('jwt'); }
+function clearToken(){ localStorage.removeItem('jwt'); }
+function authHeaders() {
+  const token = getToken();
+  return token ? { 'Authorization': 'Bearer ' + token } : {};
+}
+
+function showMessage(msg){ alert(msg); } // simple feedback
+
+// --- DOM references ---
+const btnLogin = document.getElementById('btn-login');
+const btnRegister = document.getElementById('btn-register');
+const btnLogout = document.getElementById('btn-logout');
+const currentUserSpan = document.getElementById('current-user');
+const recipeList = document.getElementById('recipe-list');
+const recipeDetail = document.getElementById('recipe-detail');
+const btnCreate = document.getElementById('btn-create');
+const modal = document.getElementById('modal');
+const modalBody = document.getElementById('modal-body');
+const modalClose = document.getElementById('modal-close');
+const btnSearch = document.getElementById('btn-search');
+const searchTitle = document.getElementById('search-title');
+const searchCategory = document.getElementById('search-category');
+const favoritesList = document.getElementById('favorites-list');
+const prevPageBtn = document.getElementById('prev-page');
+const nextPageBtn = document.getElementById('next-page');
+const pageInfo = document.getElementById('page-info');
+
+// --- modal helpers ---
+function openModal(html) { modalBody.innerHTML = html; modal.classList.remove('hidden'); }
+function closeModal(){ modal.classList.add('hidden'); modalBody.innerHTML = ''; }
+modalClose.addEventListener('click', closeModal);
+modal.addEventListener('click', (e)=> { if(e.target===modal) closeModal(); });
+
+// --- Auth UI ---
+function refreshAuthUI(){
+  const token = getToken();
+  if(!token){
+    currentUserSpan.textContent = '';
+    btnLogin.style.display = '';
+    btnRegister.style.display = '';
+    btnLogout.style.display = 'none';
+    btnCreate.style.display = 'none';
+    favoritesList.textContent = '(login to view)';
+  } else {
+    // try to decode username from token (JWT payload)
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    currentUserSpan.textContent = 'Hi, ' + (payload.sub || payload.username || payload.user || 'user');
+    btnLogin.style.display = 'none';
+    btnRegister.style.display = 'none';
+    btnLogout.style.display = '';
+    btnCreate.style.display = '';
+    loadFavorites();
+  }
+}
+btnLogout.addEventListener('click', () => { clearToken(); refreshAuthUI(); });
+
+// --- Auth modals ---
+btnLogin.addEventListener('click', () => {
+  openModal(`
+    <h3>Login</h3>
+    <div class="form-row"><label>Username</label><input id="login-username" /></div>
+    <div class="form-row"><label>Password</label><input id="login-password" type="password" /></div>
+    <div class="actions">
+      <button id="login-submit" class="primary">Login</button>
+      <button id="login-cancel">Cancel</button>
+    </div>
+  `);
+  document.getElementById('login-submit').addEventListener('click', loginSubmit);
+  document.getElementById('login-cancel').addEventListener('click', closeModal);
+});
+btnRegister.addEventListener('click', () => {
+  openModal(`
+    <h3>Register</h3>
+    <div class="form-row"><label>Username</label><input id="reg-username" /></div>
+    <div class="form-row"><label>Password</label><input id="reg-password" type="password" /></div>
+    <div class="form-row note">Role will be USER by default</div>
+    <div class="actions">
+      <button id="reg-submit" class="primary">Register</button>
+      <button id="reg-cancel">Cancel</button>
+    </div>
+  `);
+  document.getElementById('reg-submit').addEventListener('click', registerSubmit);
+  document.getElementById('reg-cancel').addEventListener('click', closeModal);
+});
+
+async function loginSubmit(){
+  const username = document.getElementById('login-username').value;
+  const password = document.getElementById('login-password').value;
+  try {
+    const res = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    if(!res.ok){ throw new Error('Login failed: ' + res.status); }
+    const data = await res.json();
+    // assume backend returns { token: '...' } or { accessToken: '...' }
+    const token = data.token || data.accessToken || data;
+    setToken(token);
+    closeModal();
+    refreshAuthUI();
+    loadRecipes();
+  } catch(e) { showMessage(e.message); }
+}
+
+async function registerSubmit(){
+  const username = document.getElementById('reg-username').value;
+  const password = document.getElementById('reg-password').value;
+  try {
+    const res = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    if(!res.ok){ const t = await res.text(); throw new Error('Register failed: ' + res.status + ' ' + t); }
+    showMessage('Registered — now login');
+    closeModal();
+  } catch(e){ showMessage(e.message); }
+}
+
+// --- Recipe list & paging ---
+btnSearch.addEventListener('click', () => { currentPage = 0; loadRecipes(); });
+prevPageBtn.addEventListener('click', () => { if(currentPage>0){ currentPage--; loadRecipes(); }});
+nextPageBtn.addEventListener('click', () => { if(currentPage<lastPage){ currentPage++; loadRecipes(); }});
+
+async function loadCategories(){
+  // If your backend has a categories endpoint, call it. Otherwise populate from enum list here.
+  const categories = ['APPETIZER','MAIN','DESSERT','ITALIAN','VEGETARIAN','OTHER'];
+  searchCategory.innerHTML = `<option value="">All categories</option>${categories.map(c=>`<option value="${c}">${c}</option>`).join('')}`;
+}
+
+async function loadRecipes(){
+  const title = encodeURIComponent(searchTitle.value || '');
+  const category = encodeURIComponent(searchCategory.value || '');
+  const res = await fetch(`${API_URL}/recipes?page=${currentPage}&size=${pageSize}${title?`&title=${title}`:''}${category?`&category=${category}`:''}`);
+  if(!res.ok){ recipeList.innerHTML = `<div class="card">Failed to load recipes (${res.status})</div>`; return; }
+  const page = await res.json();
+  // if backend returns Page<DTO>, we expect { content: [...], totalPages, number, size }
+  const content = page.content || page;
+  recipeList.innerHTML = content.map(r => recipeCard(r)).join('');
+  lastPage = (page.totalPages != null) ? page.totalPages - 1 : 0;
+  pageInfo.textContent = `Page ${page.number != null ? page.number + 1 : currentPage + 1} of ${ (page.totalPages!=null) ? page.totalPages : (lastPage+1) }`;
+  // attach click handlers
+  document.querySelectorAll('.card').forEach(el => el.addEventListener('click', ()=>{
+    const id = el.dataset.id;
+    loadRecipeDetail(id);
+  }));
+}
+
+function recipeCard(r){
+  return `
+    <div class="card" data-id="${r.id}">
+      <h4>${escapeHtml(r.title)}</h4>
+      <p class="small">${escapeHtml(r.category)} • by ${escapeHtml(r.authorUsername)}</p>
+      <p>${escapeHtml((r.description||'').slice(0,140))}${(r.description && r.description.length>140)?'...':''}</p>
+    </div>
+  `;
+}
+
+function escapeHtml(s){ if(!s) return ''; return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// --- Recipe detail view ---
+async function loadRecipeDetail(id){
+  const res = await fetch(`${API_URL}/recipes/${id}`, { headers: {...authHeaders(), 'Content-Type':'application/json'} });
+  if(res.status===404){ recipeDetail.innerHTML = '<p>Not found</p>'; return; }
+  if(!res.ok){ recipeDetail.innerHTML = `<p>Error ${res.status}</p>`; return; }
+  const r = await res.json();
+  const html = `
+    <h2>${escapeHtml(r.title)}</h2>
+    <p class="small">${escapeHtml(r.category)} • by ${escapeHtml(r.authorUsername)} • ${r.createdAt? new Date(r.createdAt).toLocaleString():''}</p>
+    <p>${escapeHtml(r.description || '')}</p>
+    <div class="row" style="margin-top:12px;">
+      <button id="fav-btn" class="icon">Favorite</button>
+      <span style="flex:1"></span>
+      <div id="owner-actions"></div>
+    </div>
+  `;
+  recipeDetail.innerHTML = html;
+
+  document.getElementById('fav-btn').addEventListener('click', ()=> toggleFavorite(id));
+
+  // owner actions (edit/delete) handled by server auth — we still render buttons but server will block if unauthorized
+  const ownerActions = document.getElementById('owner-actions');
+  ownerActions.innerHTML = `
+    <button id="edit-btn" class="icon">Edit</button>
+    <button id="delete-btn" class="icon danger">Delete</button>
+  `;
+  document.getElementById('edit-btn').addEventListener('click', ()=> openEditForm(r));
+  document.getElementById('delete-btn').addEventListener('click', ()=> deleteRecipe(id));
+}
+
+// --- Create / Edit recipe ---
+btnCreate.addEventListener('click', () => openCreateForm());
+
+function openCreateForm(){
+  openModal(createEditFormHtml());
+  document.getElementById('form-submit').addEventListener('click', createRecipe);
+}
+
+function openEditForm(recipe){
+  openModal(createEditFormHtml(recipe));
+  document.getElementById('form-submit').addEventListener('click', ()=> updateRecipe(recipe.id));
+}
+
+function createEditFormHtml(recipe = {}){
+  return `
+    <h3>${recipe.id ? 'Edit' : 'Create'} Recipe</h3>
+    <div class="form-row"><label>Title</label><input id="f-title" value="${escapeHtml(recipe.title||'')}" /></div>
+    <div class="form-row"><label>Category</label>
+      <select id="f-category">
+        <option value="">--Select--</option>
+        <option value="APPETIZER">APPETIZER</option>
+        <option value="MAIN">MAIN</option>
+        <option value="DESSERT">DESSERT</option>
+        <option value="ITALIAN">ITALIAN</option>
+        <option value="VEGETARIAN">VEGETARIAN</option>
+        <option value="OTHER">OTHER</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Description</label><textarea id="f-description">${escapeHtml(recipe.description||'')}</textarea></div>
+    <div class="actions">
+      <button id="form-submit" class="primary">${recipe.id ? 'Save' : 'Create'}</button>
+      <button id="form-cancel">Cancel</button>
+    </div>
+  `;
+}
+
+async function createRecipe(){
+  const title = document.getElementById('f-title').value;
+  const category = document.getElementById('f-category').value;
+  const description = document.getElementById('f-description').value;
+  try {
+    const res = await fetch(`${API_URL}/recipes`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', ...authHeaders()},
+      body: JSON.stringify({ title, category, description })
+    });
+    if(!res.ok){ const t = await res.text(); throw new Error('Create failed: ' + res.status + ' ' + t); }
+    closeModal();
+    loadRecipes();
+    showMessage('Recipe created');
+  } catch(e){ showMessage(e.message); }
+}
+
+async function updateRecipe(id){
+  const title = document.getElementById('f-title').value;
+  const category = document.getElementById('f-category').value;
+  const description = document.getElementById('f-description').value;
+  try {
+    const res = await fetch(`${API_URL}/recipes/${id}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json', ...authHeaders()},
+      body: JSON.stringify({ title, category, description })
+    });
+    if(res.status===403){ throw new Error('Forbidden: you are not owner or admin'); }
+    if(!res.ok){ const t = await res.text(); throw new Error('Update failed: ' + res.status + ' ' + t); }
+    closeModal();
+    loadRecipes();
+    loadRecipeDetail(id);
+    showMessage('Saved');
+  } catch(e){ showMessage(e.message); }
+}
+
+async function deleteRecipe(id){
+  if(!confirm('Delete recipe?')) return;
+  try {
+    const res = await fetch(`${API_URL}/recipes/${id}`, {
+      method: 'DELETE',
+      headers: {...authHeaders()}
+    });
+    if(res.status===403) throw new Error('Forbidden: you are not owner or admin');
+    if(res.status===404) throw new Error('Not found');
+    if(!res.ok) throw new Error('Delete failed: ' + res.status);
+    showMessage('Deleted');
+    loadRecipes();
+    recipeDetail.innerHTML = '<p>Select a recipe to see details</p>';
+  } catch(e){ showMessage(e.message); }
+}
+
+// --- Favorites ---
+async function toggleFavorite(recipeId){
+  try {
+    // try to add; if 409 or already exists, try delete
+    const addRes = await fetch(`${API_URL}/favorites/${recipeId}`, {
+      method: 'POST',
+      headers: {...authHeaders()}
+    });
+    if(addRes.ok){
+      showMessage('Added to favorites');
+      loadFavorites();
+      return;
+    }
+    if(addRes.status === 409 || addRes.status === 400){
+      // try delete
+      const del = await fetch(`${API_URL}/favorites/${recipeId}`, { method:'DELETE', headers:{...authHeaders()} });
+      if(del.ok){ showMessage('Removed from favorites'); loadFavorites(); return; }
+    }
+    if(addRes.status===401) throw new Error('Unauthorized');
+    showMessage('Favorite action failed: ' + addRes.status);
+  } catch(e){ showMessage(e.message); }
+}
+
+async function loadFavorites(){
+  const token = getToken();
+  if(!token){ favoritesList.textContent = '(login to view)'; return; }
+  try {
+    const res = await fetch(`${API_URL}/favorites`, { headers: {...authHeaders()} });
+    if(!res.ok){ favoritesList.textContent = 'Failed to load'; return; }
+    const list = await res.json();
+    favoritesList.innerHTML = list.map(f => `
+      <div class="card">
+        <h4>${escapeHtml(f.title)}</h4>
+        <p class="small">${escapeHtml(f.category)} • by ${escapeHtml(f.authorUsername)}</p>
+      </div>
+    `).join('');
+  } catch(e){ favoritesList.textContent = 'Error'; }
+}
+
+// --- init ---
+(async function init(){
+  await loadCategories();
+  refreshAuthUI();
+  loadRecipes();
+})();
+
+...........
+function showToast(message, type = 'success') {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('show');
+  }, 10);
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+............
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #333;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all .3s ease;
+  z-index: 9999;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast.success { background: #28a745; }
+.toast.error { background: #dc3545; }
+.toast.warning { background: #ffc107; color: black; }
+
+.............
+function renderRecipeDetail(r) {
+  const user = getCurrentUser(); // parsed from JWT
+  const isOwner = user && (user.username === r.authorUsername || user.role === 'ADMIN');
+
+  let actionsHtml = '';
+  if (isOwner) {
+    actionsHtml = `
+      <button id="edit-btn" class="icon">Edit</button>
+      <button id="delete-btn" class="icon danger">Delete</button>
+    `;
+  }
+
+  recipeDetail.innerHTML = `
+    <h2>${escapeHtml(r.title)}</h2>
+    <p class="small">${escapeHtml(r.category)} • by ${escapeHtml(r.authorUsername)}</p>
+    <p>${escapeHtml(r.description)}</p>
+    <div class="row">
+      <button id="fav-btn" class="icon">❤️ Favorite</button>
+      <div style="flex:1"></div>
+      ${actionsHtml}
+    </div>
+  `;
+
+  // Attach handlers only if visible
+  if (isOwner) {
+    document.getElementById('edit-btn').addEventListener('click', () => openEditForm(r));
+    document.getElementById('delete-btn').addEventListener('click', () => confirmDelete(r.id));
+  }
+}
+......
+function confirmDelete(id) {
+  if (confirm("Are you sure you want to delete this recipe?")) {
+    deleteRecipe(id);
+  }
+}
+.........
+/frontend
+  ├── index.html
+  ├── styles.css
+  ├── app.js
+  ├── assets/
+  └── README.md  ✅ with setup instructions
+
+

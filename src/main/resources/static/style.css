@@ -1,0 +1,203 @@
+:root {
+  --accent:#2b8cff;
+  --muted:#6b7280;
+  --card:#ffffff;
+  --danger:#e05d5d;
+  --shadow:0 8px 20px rgba(16,24,40,0.06);
+  --radius:12px;
+  --bg:#f5f9ff;
+}
+
+body {
+  margin:0;
+  font-family:Inter,Segoe UI,Roboto,sans-serif;
+  background:var(--bg);
+  color:#0f172a;
+}
+
+.app-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:16px 26px;
+  background:rgba(255,255,255,0.8);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid rgba(15,23,42,0.05);
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+
+.brand h1 { margin:0; font-size:20px; font-weight:700; }
+
+.auth-area { display:flex; align-items:center; gap:8px; }
+
+.container {
+  display:flex;
+  gap:20px;
+  padding:22px;
+  max-width:1200px;
+  margin:auto;
+}
+
+.left { flex:1.8; }
+.right { flex:1; max-width:340px; }
+
+.card {
+  background:var(--card);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:16px;
+  border:1px solid rgba(0,0,0,0.03);
+}
+
+.search-row { display:flex; gap:10px; align-items:center; }
+
+input, select, textarea {
+  padding:10px 12px;
+  border:1px solid rgba(0,0,0,0.08);
+  border-radius:8px;
+  font-size:14px;
+  flex:1;
+}
+textarea { resize:vertical; min-height:80px; }
+
+input:focus, select:focus, textarea:focus {
+  border-color:var(--accent);
+  outline:none;
+  box-shadow:0 0 0 3px rgba(43,140,255,0.1);
+}
+
+.btn {
+  border:none;
+  padding:8px 14px;
+  border-radius:8px;
+  font-weight:600;
+  cursor:pointer;
+}
+.btn.primary { background:var(--accent); color:white; }
+.btn.ghost { background:transparent; border:1px solid rgba(0,0,0,0.1); }
+.btn.small { padding:6px 10px; font-size:13px; }
+
+.grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:14px;
+  margin-top:16px;
+}
+
+.recipe-card {
+  border-radius:12px;
+  padding:14px;
+  background:white;
+  box-shadow:0 4px 12px rgba(0,0,0,0.04);
+  cursor:pointer;
+  transition:transform .2s ease, box-shadow .2s ease;
+}
+.recipe-card:hover {
+  transform:translateY(-4px);
+  box-shadow:0 10px 20px rgba(0,0,0,0.08);
+}
+.recipe-card h4 { margin:0 0 6px; font-size:16px; }
+.recipe-meta { color:var(--muted); font-size:13px; margin-bottom:6px; }
+.recipe-desc { font-size:14px; color:#333; }
+
+.spinner { display:flex; justify-content:center; margin:20px 0; }
+.spinner.hidden { display:none; }
+.loader {
+  width:34px; height:34px; border-radius:50%;
+  border:4px solid #eee;
+  border-top:4px solid var(--accent);
+  animation:spin 1s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.modal {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.5);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:200;
+}
+.modal.hidden { display:none; }
+.modal-content {
+  width:620px;
+  max-width:95%;
+  position:relative;
+  background:white;
+  border-radius:12px;
+  padding:20px;
+}
+.close {
+  position:absolute;
+  right:10px;
+  top:8px;
+  background:none;
+  border:none;
+  font-size:22px;
+  cursor:pointer;
+}
+
+.toast-root {
+  position:fixed;
+  right:20px;
+  bottom:20px;
+  z-index:999;
+}
+.toast {
+  background:#111827;
+  color:white;
+  padding:10px 14px;
+  border-radius:8px;
+  margin-top:10px;
+  opacity:0;
+  transform:translateY(10px);
+  transition:all .3s;
+}
+.toast.show { opacity:1; transform:translateY(0); }
+.toast.success { background:#16a34a; }
+.toast.error { background:#dc2626; }
+.toast.warning { background:#f59e0b; color:#111; }
+
+.favorites h3 { margin-top:0; }
+.fav-list { list-style:none; padding:0; margin:0; }
+.fav-list li {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:6px 0;
+  border-bottom:1px solid #f0f0f0;
+}
+.fav-remove {
+  border:none;
+  background:transparent;
+  color:var(--danger);
+  cursor:pointer;
+  font-size:16px;
+}
+
+.form-row {
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-bottom:10px;
+}
+.form-row label { font-size:14px; color:var(--muted); }
+
+
+/* Favorite button red state */
+.btn.fav-active {
+  background: #ff4d4d !important;
+  color: white !important;
+}
+
+/* Category select in form */
+.form-row select {
+  padding: 10px 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 8px;
+  font-size: 14px;
+}
+

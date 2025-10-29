@@ -5,5 +5,8 @@ public enum Category {
     MAIN_COURSE,
     APPETIZER,
     SALAD,
-    BEVERAGE
+    BEVERAGE,
+    OTHER
+
+
 }

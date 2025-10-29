@@ -36,6 +36,10 @@ public class Recipe {
     @Size(max = 5000, message = "Description cannot exceed 5000 characters")
     private String description;
 
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String instructions;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 50, nullable = false)
     private Category category;

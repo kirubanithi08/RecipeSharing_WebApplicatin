@@ -8,6 +8,7 @@ public record RecipeDTO(
         String title,
         String description,
         String category,
+        String instructions,
         String authorUsername,
         LocalDateTime createdAt
 ) {}

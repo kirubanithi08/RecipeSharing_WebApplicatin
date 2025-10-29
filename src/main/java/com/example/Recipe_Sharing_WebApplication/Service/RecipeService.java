@@ -1,6 +1,7 @@
 package com.example.Recipe_Sharing_WebApplication.Service;
 
 import com.example.Recipe_Sharing_WebApplication.DTO.RecipeDTO;
+import com.example.Recipe_Sharing_WebApplication.Entity.Category;
 import com.example.Recipe_Sharing_WebApplication.Entity.Recipe;
 import com.example.Recipe_Sharing_WebApplication.Entity.User;
 import com.example.Recipe_Sharing_WebApplication.Repository.RecipeRepository;
@@ -12,7 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +21,6 @@ public class RecipeService {
 
     private final RecipeRepository recipeRepository;
     private final UserRepository userRepository;
-
 
     public Page<RecipeDTO> findAll(Pageable pageable) {
         return recipeRepository.findAllWithAuthor(pageable).map(this::mapToDTO);
@@ -30,13 +30,11 @@ public class RecipeService {
         return recipeRepository.findById(id).map(this::mapToDTO);
     }
 
-
     public RecipeDTO create(Recipe recipe) {
         User author = getCurrentUserFromJWT();
         recipe.setAuthor(author);
         return mapToDTO(recipeRepository.save(recipe));
     }
-
 
     public Optional<RecipeDTO> update(Long id, Recipe updates) {
         return recipeRepository.findById(id).map(existing -> {
@@ -47,7 +45,6 @@ public class RecipeService {
         });
     }
 
-
     public boolean delete(Long id) {
         return recipeRepository.findById(id).map(recipe -> {
             recipeRepository.delete(recipe);
@@ -55,9 +52,25 @@ public class RecipeService {
         }).orElse(false);
     }
 
+//    public Page<RecipeDTO> search(String title, String category, Pageable pageable) {
+//        return recipeRepository.search(title, category, pageable).map(this::mapToDTO);
+//    }
+
+
+
     public Page<RecipeDTO> search(String title, String category, Pageable pageable) {
-        return recipeRepository.search(title, category, pageable).map(this::mapToDTO);
+        Category categoryEnum = null;
+        if (category != null && !category.isBlank()) {
+            try {
+                categoryEnum = Category.valueOf(category.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                categoryEnum = null; // invalid input, ignore filter
+            }
+        }
+        return recipeRepository.search(title, categoryEnum, pageable)
+                .map(this::mapToDTO);
     }
+
 
 
     public boolean isOwner(Long recipeId) {
@@ -67,22 +80,28 @@ public class RecipeService {
                 .orElse(false);
     }
 
-
     private RecipeDTO mapToDTO(Recipe recipe) {
         return new RecipeDTO(
                 recipe.getId(),
                 recipe.getTitle(),
                 recipe.getDescription(),
+                recipe.getInstructions(),
                 recipe.getCategory().name(),
                 recipe.getAuthor().getUsername(),
                 recipe.getCreatedAt()
         );
     }
 
-
     private User getCurrentUserFromJWT() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return userRepository.findByUsername(auth.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    // ✅ FIXED VERSION — return all enum constants
+    public List<String> getAllCategories() {
+        return Arrays.stream(Category.values())
+                .map(Enum::name)
+                .toList();
     }
 }

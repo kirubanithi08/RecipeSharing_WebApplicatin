@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Recipe Share — Modern</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <h1>Recipe Share</h1>
+    </div>
+    <div id="auth-area" class="auth-area">
+      <span id="current-user" class="current-user"></span>
+      <button id="btn-login" class="btn small">Login</button>
+      <button id="btn-register" class="btn small ghost">Register</button>
+      <button id="btn-logout" class="btn small ghost" style="display:none">Logout</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="left">
+      <div class="controls card">
+        <div class="search-row">
+          <input id="search-title" placeholder="Search recipes..." />
+          <select id="search-category">
+            <option value="">All categories</option>
+          </select>
+          <button id="btn-create" class="btn primary" style="display:none">Create</button>
+        </div>
+      </div>
+
+      <div id="recipe-list" class="grid"></div>
+
+      <div class="pagination card">
+        <button id="prev-page" class="btn ghost">Prev</button>
+        <span id="page-info" class="small muted"></span>
+        <button id="next-page" class="btn ghost">Next</button>
+      </div>
+
+      <div id="loading-spinner" class="spinner hidden">
+        <div class="loader"></div>
+      </div>
+    </section>
+
+    <aside class="right">
+      <div id="favorites-section" class="card favorites">
+        <h3>Your Favorites</h3>
+        <ul id="favorites-list" class="fav-list"> (login to view) </ul>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Modal for recipe details and forms -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-content card">
+      <button class="close" id="modal-close">×</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="toast-root" class="toast-root"></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
