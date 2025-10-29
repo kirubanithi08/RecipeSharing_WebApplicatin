@@ -177,8 +177,6 @@ async function loadRecipes() {
     const page = await res.json();
     const content = page.content || page;
 
-
-
     recipeList.innerHTML = content.map(r => `
       <div class="recipe-card" data-id="${r.id}">
         <h4>${escapeHtml(r.title)}</h4>
@@ -187,10 +185,6 @@ async function loadRecipes() {
       </div>
     `).join('') || '<div class="card">No recipes</div>';
 
-
-
-
-    
     lastPage = (page.totalPages || 1) - 1;
     pageInfo.textContent = `Page ${page.number + 1} of ${page.totalPages}`;
     document.querySelectorAll('.recipe-card').forEach(el => {
