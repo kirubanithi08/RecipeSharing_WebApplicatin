@@ -53,11 +53,6 @@ public class RecipeService {
         }).orElse(false);
     }
 
-//    public Page<RecipeDTO> search(String title, String category, Pageable pageable) {
-//        return recipeRepository.search(title, category, pageable).map(this::mapToDTO);
-//    }
-
-
 
     public Page<RecipeDTO> search(String title, String category, Pageable pageable) {
         Category categoryEnum = null;
@@ -65,7 +60,7 @@ public class RecipeService {
             try {
                 categoryEnum = Category.valueOf(category.toUpperCase());
             } catch (IllegalArgumentException e) {
-                categoryEnum = null; // invalid input, ignore filter
+                categoryEnum = null;
             }
         }
         return recipeRepository.search(title, categoryEnum, pageable)
@@ -99,7 +94,7 @@ public class RecipeService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    // ✅ FIXED VERSION — return all enum constants
+
     public List<String> getAllCategories() {
         return Arrays.stream(Category.values())
                 .map(Enum::name)

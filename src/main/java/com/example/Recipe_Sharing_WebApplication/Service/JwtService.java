@@ -1,6 +1,6 @@
 package com.example.Recipe_Sharing_WebApplication.Service;
 
-import com.example.Recipe_Sharing_WebApplication.Entity.User; // ✅ Add this import
+import com.example.Recipe_Sharing_WebApplication.Entity.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -26,23 +26,27 @@ public class JwtService {
     @Value("${app.jwtRefreshMs}")
     private long jwtRefreshMs;
 
+
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
+
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
 
-    public String generateToken(UserDetails userDetails) {
+
+    public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername(), jwtAccessMs);
+        claims.put("role", user.getRole().name());
+        return createToken(claims, user.getUsername(), jwtAccessMs);
     }
 
-    public String generateRefreshToken(UserDetails userDetails) {
-        Map<String, Object> claims = new HashMap<>();
-        return createToken(claims, userDetails.getUsername(), jwtRefreshMs);
+
+    public String generateRefreshToken(User user) {
+        return createToken(new HashMap<>(), user.getUsername(), jwtRefreshMs);
     }
 
     private String createToken(Map<String, Object> claims, String subject, long expirationMs) {
@@ -55,7 +59,6 @@ public class JwtService {
                 .compact();
     }
 
-    // ✅ TOKEN VALIDATION HERE
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);

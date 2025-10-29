@@ -25,6 +25,7 @@ const btnLogin = document.getElementById('btn-login');
 const btnRegister = document.getElementById('btn-register');
 const btnLogout = document.getElementById('btn-logout');
 const currentUserSpan = document.getElementById('current-user');
+const btnAdminUsers = document.getElementById('btn-admin-users'); // admin button
 
 // ====== TOKEN HELPERS ======
 function getToken() { return localStorage.getItem('accessToken'); }
@@ -98,11 +99,17 @@ function refreshAuthUI() {
     btnRegister.style.display = '';
     btnLogout.style.display = 'none';
     btnCreate.style.display = 'none';
+    btnAdminUsers.style.display = 'none';
     favoritesList.innerHTML = '(login to view)';
   } else {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       currentUserSpan.textContent = 'Hi, ' + (payload.sub || payload.username || 'user');
+      if (payload.role && payload.role.toUpperCase() === 'ADMIN') {
+        btnAdminUsers.style.display = '';
+      } else {
+        btnAdminUsers.style.display = 'none';
+      }
     } catch { currentUserSpan.textContent = 'Hi, user'; }
     btnLogin.style.display = 'none';
     btnRegister.style.display = 'none';
@@ -194,6 +201,16 @@ async function loadRecipes() {
   finally { hideSpinner(); }
 }
 
+// ======== USER INFO ========
+function getUserInfo() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return { username: payload.sub || payload.username, role: payload.role || 'USER' };
+  } catch { return null; }
+}
+
 // ======== RECIPE DETAIL ========
 async function loadRecipeDetail(id) {
   openModal('<p>Loading...</p>');
@@ -201,21 +218,14 @@ async function loadRecipeDetail(id) {
     const res = await apiFetch(`${API_URL}/recipes/${id}`);
     if (!res.ok) { modalBody.innerHTML = '<p>Failed to load</p>'; return; }
     const r = await res.json();
-
-    // Determine current username from token
-    const token = getToken();
-    let username = null;
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        username = payload.sub || payload.username;
-      } catch {}
-    }
+    const user = getUserInfo();
+    const isOwner = user && user.username === r.authorUsername;
+    const isAdmin = user && user.role.toUpperCase() === 'ADMIN';
 
     let buttons = '';
-    if (token) {
+    if (user) {
       buttons += `<button class="btn" id="fav-add" data-id="${r.id}">❤ Favorite</button>`;
-      if (username && username === r.authorUsername) {
+      if (isOwner || isAdmin) {
         buttons += `
           <button class="btn" id="btn-edit">✎ Edit</button>
           <button class="btn danger" id="btn-delete">🗑 Delete</button>
@@ -364,6 +374,52 @@ async function submitRecipeForm(id) {
     if (!res.ok) throw new Error('Save failed');
     closeModal(); showToast('Recipe saved'); loadRecipes();
   } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ======== ADMIN USER MANAGEMENT ========
+btnAdminUsers.addEventListener('click', showUserManagement);
+
+async function showUserManagement() {
+  openModal('<p>Loading users...</p>');
+  try {
+    const res = await apiFetch(`${API_URL}/users`);
+    if (!res.ok) throw new Error('Failed to load users');
+    const users = await res.json();
+
+    modalBody.innerHTML = `
+      <h3>Manage Users</h3>
+      <table style="width:100%;border-collapse:collapse;margin-top:10px;">
+        <tr><th>ID</th><th>Username</th><th>Role</th><th>Action</th></tr>
+        ${users.map(u => `
+          <tr>
+            <td>${u.id}</td>
+            <td>${escapeHtml(u.username)}</td>
+            <td>${escapeHtml(u.role)}</td>
+            <td>
+              <button class="btn danger small" data-id="${u.id}" ${u.role === 'ADMIN' ? 'disabled' : ''}>Delete</button>
+            </td>
+          </tr>
+        `).join('')}
+      </table>
+    `;
+
+    modalBody.querySelectorAll('button[data-id]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!confirm('Delete this user?')) return;
+        const del = await apiFetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+        if (del.ok) {
+          showToast('User deleted');
+          showUserManagement(); // refresh list
+        } else {
+          showToast('Failed to delete user', 'error');
+        }
+      });
+    });
+
+  } catch (e) {
+    modalBody.innerHTML = `<p>${e.message}</p>`;
+  }
 }
 
 // ======== INIT ========

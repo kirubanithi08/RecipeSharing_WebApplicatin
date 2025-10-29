@@ -15,9 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * Controller for managing recipes (CRUD + search + category list).
- */
+
 @RestController
 @RequestMapping("/api/recipes")
 @RequiredArgsConstructor
@@ -26,10 +24,7 @@ public class RecipeController {
 
     private final RecipeService recipeService;
 
-    /**
-     * Get all recipes with optional filtering and pagination.
-     * Example: GET /api/recipes?page=0&size=8&title=pasta&category=DESSERT
-     */
+
     @Operation(summary = "List recipes", description = "Retrieve all recipes, optionally filtered by title or category.")
     @GetMapping
     public Page<RecipeDTO> getAllRecipes(
@@ -44,9 +39,7 @@ public class RecipeController {
         return recipeService.findAll(PageRequest.of(page, size));
     }
 
-    /**
-     * Get a specific recipe by ID.
-     */
+
     @Operation(summary = "Get recipe by ID", description = "Retrieve a specific recipe using its unique ID.")
     @GetMapping("/{id}")
     public ResponseEntity<RecipeDTO> getRecipeById(@PathVariable Long id) {
@@ -55,9 +48,7 @@ public class RecipeController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * Create a new recipe (requires authentication).
-     */
+
     @Operation(summary = "Create recipe", description = "Authenticated users can create a new recipe.")
     @PostMapping
     @PreAuthorize("isAuthenticated()")
@@ -65,9 +56,7 @@ public class RecipeController {
         return ResponseEntity.status(201).body(recipeService.create(recipe));
     }
 
-    /**
-     * Update an existing recipe (only owner or admin can update).
-     */
+
     @Operation(summary = "Update recipe", description = "Recipe owner or admin can update recipe details.")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @recipeService.isOwner(#id)")
@@ -77,9 +66,7 @@ public class RecipeController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /**
-     * Delete a recipe (only owner or admin can delete).
-     */
+
     @Operation(summary = "Delete recipe", description = "Recipe owner or admin can delete the recipe.")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @recipeService.isOwner(#id)")
@@ -89,9 +76,7 @@ public class RecipeController {
                 : ResponseEntity.notFound().build();
     }
 
-    /**
-     * Get all available recipe categories.
-     */
+
     @Operation(summary = "List categories", description = "Returns all available recipe categories.")
     @GetMapping("/categories")
     public ResponseEntity<List<String>> getAllCategories() {

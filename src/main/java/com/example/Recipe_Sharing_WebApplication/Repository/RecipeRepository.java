@@ -11,8 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface  RecipeRepository extends JpaRepository<Recipe, Long> {
 
-//    @Query("SELECT r FROM Recipe r JOIN FETCH r.author")
-//    Page<Recipe> findAllWithAuthor(Pageable pageable);
+
 
     @Query("SELECT r FROM Recipe r")
     @EntityGraph(attributePaths = "author")

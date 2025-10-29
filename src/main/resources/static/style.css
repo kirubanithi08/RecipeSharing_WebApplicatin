@@ -15,7 +15,7 @@ body {
   color:#0f172a;
 }
 
-/* Header */
+
 .app-header {
   display:flex;
   justify-content:space-between;
@@ -134,7 +134,7 @@ input:focus, select:focus, textarea:focus {
   margin-bottom:6px;
 }
 
-/* ✅ Fix: show only one line of description in cards */
+
 .recipe-desc {
   font-size:14px;
   color:#333;
@@ -261,25 +261,41 @@ input:focus, select:focus, textarea:focus {
   font-size:14px;
 }
 
-/* ===== Fix overflowing text in modal ===== */
+
 .modal-content {
-  max-height: 80vh;            /* keep modal within viewport height */
-  overflow-y: auto;             /* enable vertical scroll if content is long */
-  word-wrap: break-word;        /* prevent long words from overflowing */
-  overflow-wrap: break-word;    /* for extra safety */
+  max-height: 80vh;            
+  overflow-y: auto;             
+  word-wrap: break-word;        
+  overflow-wrap: break-word;    
 }
 
-/* Ensure long paragraphs look good */
+
 .modal-content p {
-  white-space: pre-wrap;        /* preserve line breaks but wrap text */
+  white-space: pre-wrap;      
   line-height: 1.5;
   margin-bottom: 10px;
 }
 
-/* Optional: make description and instructions look visually distinct */
+
 .modal-content strong {
   display: inline-block;
   margin-top: 10px;
   color: var(--accent);
 }
 
+.modal table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.modal th, .modal td {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+.modal th {
+  background-color: #f0f0f0;
+  font-weight: bold;
+}
